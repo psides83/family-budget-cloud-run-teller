@@ -47,7 +47,7 @@ Set variables for your environment first:
 
 ```sh
 export PROJECT_ID="your-project-id"
-export REGION="us-central1"
+export REGION="me-central1"
 export SERVICE_NAME="familybudget-teller"
 export API_KEY="replace-with-long-random-string"
 ```
@@ -60,7 +60,7 @@ gcloud run deploy "$SERVICE_NAME" \
   --project "$PROJECT_ID" \
   --region "$REGION" \
   --allow-unauthenticated \
-  --set-env-vars "API_KEY=$API_KEY,TELLER_CERT_SECRET_NAME=teller-cert-pem,TELLER_KEY_SECRET_NAME=teller-key-pem"
+  --set-env-vars "API_KEY=$API_KEY,GCP_PROJECT=$PROJECT_ID,TELLER_CERT_SECRET_NAME=teller-cert-pem,TELLER_KEY_SECRET_NAME=teller-key-pem"
 ```
 
 ## 5) Grant Secret Manager access to Cloud Run service account

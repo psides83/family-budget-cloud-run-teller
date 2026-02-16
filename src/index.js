@@ -11,12 +11,12 @@ const projectId = process.env.GCP_PROJECT || process.env.GOOGLE_CLOUD_PROJECT;
 const tellerCertSecret = process.env.TELLER_CERT_SECRET_NAME;
 const tellerKeySecret = process.env.TELLER_KEY_SECRET_NAME;
 
+const startupConfigErrors = [];
 if (!projectId) {
-  throw new Error("Missing GCP project env (GCP_PROJECT or GOOGLE_CLOUD_PROJECT)");
+  startupConfigErrors.push("Missing GCP project env (GCP_PROJECT or GOOGLE_CLOUD_PROJECT)");
 }
-
 if (!tellerCertSecret || !tellerKeySecret) {
-  throw new Error("Missing TELLER_CERT_SECRET_NAME or TELLER_KEY_SECRET_NAME");
+  startupConfigErrors.push("Missing TELLER_CERT_SECRET_NAME or TELLER_KEY_SECRET_NAME");
 }
 
 const firestore = new Firestore();
@@ -32,6 +32,13 @@ function requireApiKey(req, res, next) {
   const given = req.get("x-api-key");
   if (!given || given !== expected) {
     return res.status(401).json({ error: "Unauthorized" });
+  }
+  return next();
+}
+
+function requireRuntimeConfig(req, res, next) {
+  if (startupConfigErrors.length > 0) {
+    return res.status(500).json({ error: startupConfigErrors.join("; ") });
   }
   return next();
 }
@@ -88,10 +95,14 @@ async function getUserDoc(userId) {
 }
 
 app.get("/healthz", (_req, res) => {
-  res.status(200).json({ ok: true });
+  res.status(200).json({
+    ok: true,
+    config_ok: startupConfigErrors.length === 0,
+    config_errors: startupConfigErrors
+  });
 });
 
-app.post("/teller/enroll", requireApiKey, async (req, res) => {
+app.post("/teller/enroll", requireApiKey, requireRuntimeConfig, async (req, res) => {
   try {
     const userId = String(req.body.userId || "default");
     const accessToken = String(req.body.accessToken || "").trim();
@@ -115,7 +126,7 @@ app.post("/teller/enroll", requireApiKey, async (req, res) => {
   }
 });
 
-app.get("/teller/transactions", requireApiKey, async (req, res) => {
+app.get("/teller/transactions", requireApiKey, requireRuntimeConfig, async (req, res) => {
   try {
     const userId = String(req.query.userId || "default");
     const startDate = String(req.query.start_date || "").trim();
