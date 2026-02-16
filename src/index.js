@@ -94,6 +94,10 @@ async function getUserDoc(userId) {
   return { ref, snap };
 }
 
+app.get("/", (_req, res) => {
+  res.status(200).json({ ok: true, service: "familybudget-teller" });
+});
+
 app.get("/healthz", (_req, res) => {
   res.status(200).json({
     ok: true,
